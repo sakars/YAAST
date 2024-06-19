@@ -5,31 +5,58 @@ pub mod rule;
 
 #[cfg(test)]
 mod tests {
-    use crate::Parsable;
+    use std::{cell::OnceCell, rc::Rc};
+
+    use crate::{rule::custom, Parsable};
 
     #[test]
-    fn parse_expression() {
-        let identifier = seq!("identifier" =>
-        sor!(
-            char!('_'),
-            ranges!(('a','z'), ('A','Z'))
-        ),
-        star!(
-            sor!(
-                char!('_'),
-                ranges!(('a','z'), ('A','Z'), ('0','9'))
-            )
-        )
-        );
-        let res = identifier.parse("a_1");
-        assert_eq!(res.is_some(), true);
-        let node = res.unwrap();
-        assert_eq!(node.content, "a_1");
-        assert_eq!(node.children.len(), 2);
-        assert_eq!(node.children[0].content, "a");
-        assert_eq!(node.children[1].content, "_1");
-        assert_eq!(node.children[1].children.len(), 2);
-        assert_eq!(node.children[1].children[0].content, "_");
-        assert_eq!(node.children[1].children[1].content, "1");
+    fn back_and_forth() {
+        let a = custom!("a");
+        let b = custom!("b");
+        let a = a.init(sor!(seq!(char!('a'), b.get()), char!('b')));
+        let b = b.init(sor!(seq!(char!('b'), a.get()), char!('a')));
+        let res = a.parse("abb");
+        let res2 = b.parse("baa");
+        let res3 = a.parse("ababababaa");
+        let res4 = a.parse("ababababa");
+        assert!(res.is_some());
+        assert!(res2.is_some());
+        assert!(res3.is_some());
+        assert!(res4.is_none());
+        let n = res3.unwrap();
+        assert_eq!(n.content, "ababababaa");
+        assert_eq!(n.type_name, "a");
+        assert_eq!(n.children().len(), 1);
+        let n = &n.children()[0];
+        assert_eq!(n.content, "ababababaa");
+        assert_eq!(n.type_name, "Sor");
+        assert_eq!(n.children().len(), 1);
+        let n = &n.children()[0];
+        assert_eq!(n.children().len(), 2);
+        assert_eq!(n.type_name, "Seq");
+        let n1 = &n.children()[0];
+        let n2 = &n.children()[1];
+        assert_eq!(n1.content, "a");
+        assert_eq!(n1.type_name, "Char");
+        assert_eq!(n1.children().len(), 0);
+        assert_eq!(n2.content, "babababaa");
+        assert_eq!(n2.type_name, "b");
+        assert_eq!(n2.children().len(), 1);
+        let n = &n2.children()[0];
+        assert_eq!(n.content, "babababaa");
+        assert_eq!(n.type_name, "Sor");
+        assert_eq!(n.children().len(), 1);
+        let n = &n.children()[0];
+        assert_eq!(n.children().len(), 2);
+        assert_eq!(n.type_name, "Seq");
+        assert_eq!(n.content, "babababaa");
+        let n1 = &n.children()[0];
+        let n2 = &n.children()[1];
+        assert_eq!(n1.content, "b");
+        assert_eq!(n2.content, "abababaa");
+        assert_eq!(n1.type_name, "Char");
+        assert_eq!(n2.type_name, "a");
+        assert_eq!(n1.children().len(), 0);
+        assert_eq!(n2.children().len(), 1);
     }
 }

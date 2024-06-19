@@ -8,14 +8,12 @@ pub static SEQ_ID: Lazy<usize> =
     Lazy::new(|| COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
 
 pub struct Seq<'a> {
-    pub rules: Vec<Box<dyn Parsable<'a>>>,
-    pub id: usize,
-    pub name: String,
+    pub rules: Vec<crate::rule::Rule<'a>>,
 }
 
 impl<'a> Parsable<'a> for Seq<'a> {
-    fn parse(&self, input: &'a str) -> Option<Node<'a>> {
-        let mut node = Node::new_empty(self.id, &self.name);
+    fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>> {
+        let mut node = Node::new_empty(id, name);
         let mut size = 0;
         for rule in &self.rules {
             if let Some(child) = rule.parse(&input[size..]) {
@@ -28,31 +26,23 @@ impl<'a> Parsable<'a> for Seq<'a> {
         node.content = &input[0..size];
         Some(node)
     }
-    fn get_id(&self) -> &usize {
-        &self.id
-    }
-    fn get_name(&self) -> &String {
-        &self.name
-    }
 }
 
 #[macro_export]
 macro_rules! seq {
-        ($name:expr => $($rule:expr),*) => {
-            crate::rule::Seq {
-                rules: vec![$(Box::new($rule)),*],
-                id: crate::COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-                name: $name.to_string(),
-            }
-        };
-        ($($rule:expr),*) => {
-            crate::rule::Seq {
-                rules: vec![$(Box::new($rule)),*],
-                id: *crate::rule::SEQ_ID,
-                name: "Seq".to_string(),
-            }
-        };
-    }
+    ($($rule:expr),*) => {
+        $crate::rule::Rule::new(
+            Box::new(crate::rule::Seq {
+                rules: vec![$($rule.clone()),*],
+            }),
+            *crate::rule::SEQ_ID,
+            "Seq".to_string(),
+        )
+    };
+    ($name:expr => $($rule:expr),*) => {
+        $crate::custom!($name => $crate::seq!($($rule),*))
+    };
+}
 
 #[cfg(test)]
 mod tests {
@@ -63,8 +53,8 @@ mod tests {
         let rule = seq!(char!('a'), char!('b'));
         let input = "ab";
         let mut expected_node = Node::new("ab", rule.id, &rule.name);
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("b", *rule.get_id(), rule.get_name()));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("b", rule.id, &rule.name));
 
         let result = rule.parse(input);
 
@@ -98,8 +88,8 @@ mod tests {
 
         let result = rule.parse(input);
         let mut expected_node = Node::new("ab", rule.id, &rule.name);
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("b", *rule.get_id(), rule.get_name()));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("b", rule.id, &rule.name));
         assert_eq!(result, Some(expected_node));
     }
 }

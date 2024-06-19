@@ -11,9 +11,7 @@ pub struct Node<'a> {
 }
 
 pub trait Parsable<'a> {
-    fn parse(&self, input: &'a str) -> Option<Node<'a>>;
-    fn get_id(&self) -> &usize;
-    fn get_name(&self) -> &String;
+    fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>>;
 }
 
 impl<'a> Node<'a> {
