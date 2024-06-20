@@ -39,7 +39,6 @@ macro_rules! opt {
 
 #[cfg(test)]
 mod tests {
-    use rule::CHAR_ID;
 
     use crate::*;
 
