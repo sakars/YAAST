@@ -2,8 +2,8 @@
 pub mod char;
 #[macro_use]
 pub mod eof;
-// #[macro_use]
-// pub mod opt;
+#[macro_use]
+pub mod opt;
 // #[macro_use]
 // pub mod plus;
 #[macro_use]
@@ -20,7 +20,7 @@ pub mod sor;
 // pub mod ranges;
 pub use char::*;
 pub use eof::*;
-// pub use opt::*;
+pub use opt::*;
 // pub use plus::*;
 // pub use ranges::*;
 pub use custom::*;
