@@ -4,8 +4,8 @@ pub mod char;
 pub mod eof;
 #[macro_use]
 pub mod opt;
-// #[macro_use]
-// pub mod plus;
+#[macro_use]
+pub mod plus;
 #[macro_use]
 pub mod seq;
 #[macro_use]
@@ -21,7 +21,7 @@ pub mod star;
 pub use char::*;
 pub use eof::*;
 pub use opt::*;
-// pub use plus::*;
+pub use plus::*;
 // pub use ranges::*;
 pub use custom::*;
 pub use seq::*;

@@ -1,5 +1,6 @@
 use crate::COUNTER;
 
+use super::Rule;
 use crate::Node;
 use crate::Parsable;
 use once_cell::sync::Lazy;
@@ -8,14 +9,12 @@ pub static PLUS_ID: Lazy<usize> =
     Lazy::new(|| COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
 
 pub struct Plus<'a> {
-    pub rule: Box<dyn Parsable<'a>>,
-    pub id: usize,
-    pub name: String,
+    pub rule: Rule<'a>,
 }
 
 impl<'a> Parsable<'a> for Plus<'a> {
-    fn parse(&self, input: &'a str) -> Option<Node<'a>> {
-        let mut node = Node::new_empty(self.id, &self.name);
+    fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>> {
+        let mut node = Node::new_empty(id, &name);
         let mut size = 0;
         if let Some(child) = self.rule.parse(input) {
             size += child.content.len();
@@ -30,29 +29,19 @@ impl<'a> Parsable<'a> for Plus<'a> {
         node.content = &input[0..size];
         Some(node)
     }
-    fn get_id(&self) -> &usize {
-        &self.id
-    }
-    fn get_name(&self) -> &String {
-        &self.name
-    }
 }
 
 #[macro_export]
 macro_rules! plus {
     ($name:expr => $rule:expr) => {
-        crate::rule::Plus {
-            rule: Box::new($rule),
-            id: crate::COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-            name: $name.to_string(),
-        }
+        $crate::custom!($name => $crate::plus!($rule))
     };
     ($rule:expr) => {
-        crate::rule::Plus {
-            rule: Box::new($rule),
-            id: *crate::rule::PLUS_ID,
-            name: "Plus".to_string(),
-        }
+        $crate::rule::Rule::new(
+            Box::new($crate::rule::Plus { rule: $rule }),
+            *$crate::rule::PLUS_ID,
+            "Plus".to_string(),
+        )
     };
 }
 
@@ -67,8 +56,8 @@ mod tests {
 
         let result = rule.parse(input);
 
-        let mut expected_node = Node::new("a", *rule.get_id(), rule.get_name());
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
+        let mut expected_node = Node::new("a", rule.id, &rule.name);
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
         assert_eq!(result, Some(expected_node));
     }
 
@@ -76,10 +65,10 @@ mod tests {
     fn plus_rule_matches_multiple_times() {
         let rule = plus!(char!('a'));
         let input = "aaa";
-        let mut expected_node = Node::new("aaa", *rule.get_id(), rule.get_name());
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
+        let mut expected_node = Node::new("aaa", rule.id, &rule.name);
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
 
         let result = rule.parse(input);
 
@@ -100,11 +89,11 @@ mod tests {
     fn plus_rule_matches_longer_input() {
         let rule = plus!(char!('a'));
         let input = "aaaab";
-        let mut expected_node = Node::new("aaaa", *rule.get_id(), rule.get_name());
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
-        expected_node.add_child(Node::new("a", *rule.get_id(), rule.get_name()));
+        let mut expected_node = Node::new("aaaa", rule.id, &rule.name);
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
+        expected_node.add_child(Node::new("a", rule.id, &rule.name));
 
         let result = rule.parse(input);
         assert_eq!(result, Some(expected_node));
