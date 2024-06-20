@@ -21,31 +21,13 @@ impl<'a> Parsable<'a> for One {
     }
 }
 
-// #[macro_export]
-// macro_rules! char {
-//     ($c:expr) => {
-//         std::rc::Rc::new(std::cell::OnceCell::from($crate::rule::One {
-//             c: $c,
-//             id: *$crate::rule::CHAR_ID,
-//             name: "Char".to_string(),
-//         }))
-//     };
-//     ($name:expr => $c:expr) => {
-//         std::rc::Rc::new(std::cell::OnceCell::from($crate::rule::One {
-//             c: $c,
-//             id: $crate::COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-//             name: $name.to_string(),
-//         }))
-//     };
-// }
-
 #[macro_export]
 macro_rules! char {
     ($c:expr) => {
         $crate::rule::Rule::new(
             Box::new($crate::rule::One { c: $c }),
             *$crate::rule::CHAR_ID,
-            "Char".to_string(),
+            "Char".to_string()
         )
     };
     ($name:expr => $c:expr) => {

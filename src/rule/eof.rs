@@ -7,40 +7,29 @@ use once_cell::sync::Lazy;
 pub static EOF_ID: Lazy<usize> =
     Lazy::new(|| COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
 
-pub struct Eof {
-    pub id: usize,
-    pub name: String,
-}
+pub struct Eof {}
 
 impl<'a> Parsable<'a> for Eof {
-    fn parse(&self, input: &'a str) -> Option<Node<'a>> {
+    fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>> {
         if input.is_empty() {
-            Some(Node::new_empty(self.id, &self.name))
+            Some(Node::new_empty(id, &name))
         } else {
             None
         }
-    }
-    fn get_id(&self) -> &usize {
-        &self.id
-    }
-    fn get_name(&self) -> &String {
-        &self.name
     }
 }
 
 #[macro_export]
 macro_rules! eof {
-    ($name:expr) => {
-        crate::rule::Eof {
-            id: crate::COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-            name: $name.to_string(),
-        }
-    };
     () => {
-        crate::rule::Eof {
-            id: *crate::rule::EOF_ID,
-            name: "Eof".to_string(),
-        }
+        $crate::rule::Rule::new(
+            Box::new($crate::rule::Eof { }),
+            *$crate::rule::EOF_ID,
+            "Eof".to_string()
+        )
+    };
+    ($name:expr) => {
+        $crate::custom!($name => $crate::eof!())
     };
 }
 

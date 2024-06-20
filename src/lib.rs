@@ -5,9 +5,6 @@ pub mod rule;
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::OnceCell, rc::Rc};
-
-    use crate::{rule::custom, Parsable};
 
     #[test]
     fn back_and_forth() {
