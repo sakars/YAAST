@@ -1,5 +1,6 @@
 use crate::COUNTER;
 
+use super::*;
 use crate::Node;
 use crate::Parsable;
 use once_cell::sync::Lazy;
@@ -9,41 +10,29 @@ pub static STR_ID: Lazy<usize> =
 
 pub struct Str {
     pub s: String,
-    pub id: usize,
-    pub name: String,
 }
 
 impl<'a> Parsable<'a> for Str {
-    fn parse(&self, input: &'a str) -> Option<Node<'a>> {
+    fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>> {
         if input.starts_with(&self.s) {
-            Some(Node::new(&input[0..self.s.len()], self.id, &self.name))
+            Some(Node::new(&input[0..self.s.len()], id, &name))
         } else {
             None
         }
-    }
-    fn get_id(&self) -> &usize {
-        &self.id
-    }
-    fn get_name(&self) -> &String {
-        &self.name
     }
 }
 
 #[macro_export]
 macro_rules! str {
     ($s:expr) => {
-        crate::rule::Str {
-            s: $s.to_string(),
-            id: *crate::rule::STR_ID,
-            name: "Str".to_string(),
-        }
+        $crate::rule::Rule::new(
+            Box::new($crate::rule::Str { s: $s.to_string() }),
+            *$crate::rule::STR_ID,
+            "Str".to_string(),
+        )
     };
     ($name:expr => $s:expr) => {
-        crate::rule::Str {
-            s: $s.to_string(),
-            id: crate::COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-            name: $name.to_string(),
-        }
+        $crate::custom!($name => $crate::str!($s))
     };
 }
 

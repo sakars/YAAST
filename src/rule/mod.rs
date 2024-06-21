@@ -14,8 +14,8 @@ pub mod custom;
 pub mod sor;
 #[macro_use]
 pub mod star;
-// #[macro_use]
-// pub mod str;
+#[macro_use]
+pub mod str;
 // #[macro_use]
 // pub mod ranges;
 pub use char::*;
@@ -27,7 +27,7 @@ pub use custom::*;
 pub use seq::*;
 pub use sor::*;
 pub use star::*;
-// pub use str::*;
+pub use str::*;
 
 use std::cell::OnceCell;
 use std::rc::Rc;
