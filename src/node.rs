@@ -40,6 +40,28 @@ impl<'a> Node<'a> {
     pub fn children(&self) -> &Vec<Node<'a>> {
         &self.children
     }
+
+    fn to_dot_private(&self, id: &mut usize) -> String {
+        let mut result = format!(
+            "{} [label=\"{}\\n\\\"{}\\\"\"];\n",
+            id, self.type_name, self.content
+        );
+        let my_id = *id;
+        *id += 1;
+        for child in &self.children {
+            result += &format!("{} -> {};\n", my_id, *id);
+            result += &child.to_dot_private(id);
+        }
+        result
+    }
+
+    pub fn to_dot(&self) -> String {
+        let mut id = 0;
+        let mut result = "digraph G {\n".to_string();
+        result += &self.to_dot_private(&mut id);
+        result += "}\n";
+        result
+    }
 }
 
 impl std::cmp::PartialEq for Node<'_> {

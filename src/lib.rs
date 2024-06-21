@@ -5,11 +5,13 @@ pub mod rule;
 
 #[cfg(test)]
 mod tests {
-
+    use std::{fs::File, io::Write};
     #[test]
     fn back_and_forth() {
-        let a = custom!("a");
-        let b = custom!("b");
+        let a_name = String::from("ARule");
+        let b_name = String::from("BRule");
+        let a = custom!(a_name);
+        let b = custom!(b_name);
         let a = a.init(sor!(seq!(char!('a'), b.get()), char!('b')));
         let b = b.init(sor!(seq!(char!('b'), a.get()), char!('a')));
         let res = a.parse("abb");
@@ -20,9 +22,18 @@ mod tests {
         assert!(res2.is_some());
         assert!(res3.is_some());
         assert!(res4.is_none());
+
+        // Dump graph
+        let mut file = File::create("build/graph.dot").unwrap();
+        if let Err(_) = file.write_all(res3.as_ref().unwrap().to_dot().as_bytes()) {
+            panic!("Failed to write to file");
+        }
+        let _ = file.flush();
+        drop(file);
+
         let n = res3.unwrap();
         assert_eq!(n.content, "ababababaa");
-        assert_eq!(n.type_name, "a");
+        assert_eq!(n.type_name, a_name);
         assert_eq!(n.children().len(), 1);
         let n = &n.children()[0];
         assert_eq!(n.content, "ababababaa");
@@ -37,7 +48,7 @@ mod tests {
         assert_eq!(n1.type_name, "Char");
         assert_eq!(n1.children().len(), 0);
         assert_eq!(n2.content, "babababaa");
-        assert_eq!(n2.type_name, "b");
+        assert_eq!(n2.type_name, b_name);
         assert_eq!(n2.children().len(), 1);
         let n = &n2.children()[0];
         assert_eq!(n.content, "babababaa");
@@ -52,7 +63,7 @@ mod tests {
         assert_eq!(n1.content, "b");
         assert_eq!(n2.content, "abababaa");
         assert_eq!(n1.type_name, "Char");
-        assert_eq!(n2.type_name, "a");
+        assert_eq!(n2.type_name, a_name);
         assert_eq!(n1.children().len(), 0);
         assert_eq!(n2.children().len(), 1);
     }
