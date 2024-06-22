@@ -1,14 +1,22 @@
-use std::sync::atomic::AtomicUsize;
+use std::{sync::atomic::AtomicUsize, vec};
+
+use once_cell::sync::Lazy;
 
 pub static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)] // Add the Debug trait
 pub struct Node<'a> {
-    pub content: &'a str,
-    pub children: Vec<Node<'a>>,
     pub type_id: usize,
     pub type_name: String,
+    pub content: &'a str,
+    pub children: Vec<Node<'a>>,
 }
+
+pub static ROOT_ID: Lazy<usize> =
+    Lazy::new(|| COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
+
+pub static UNREACHABLE_ID: Lazy<usize> =
+    Lazy::new(|| COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
 
 pub trait Parsable<'a> {
     fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>>;
@@ -33,6 +41,24 @@ impl<'a> Node<'a> {
         }
     }
 
+    pub fn new_as_root(node: Node<'a>) -> Node<'a> {
+        Node {
+            content: node.content,
+            children: vec![node],
+            type_id: *ROOT_ID,
+            type_name: "Root".to_string(),
+        }
+    }
+
+    pub fn new_as_unreachable() -> Node<'a> {
+        Node {
+            content: "",
+            children: Vec::new(),
+            type_id: *UNREACHABLE_ID,
+            type_name: "Unreachable".to_string(),
+        }
+    }
+
     pub fn add_child(&mut self, child: Node<'a>) {
         self.children.push(child);
     }
@@ -42,10 +68,17 @@ impl<'a> Node<'a> {
     }
 
     fn to_dot_private(&self, id: &mut usize) -> String {
+        let content_preview = if self.content.len() > 10 {
+            format!("{}...", &self.content[..10])
+        } else {
+            self.content.to_string()
+        };
+
         let mut result = format!(
             "{} [label=\"{}\\n\\\"{}\\\"\"];\n",
-            id, self.type_name, self.content
+            id, self.type_name, content_preview
         );
+
         let my_id = *id;
         *id += 1;
         for child in &self.children {

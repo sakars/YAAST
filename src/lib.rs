@@ -3,9 +3,14 @@ pub use node::*;
 #[macro_use]
 pub mod rule;
 
+pub mod filter;
+pub use filter::*;
+
 #[cfg(test)]
 mod tests {
     use std::{fs::File, io::Write};
+
+    use crate::{rule::CHAR_ID, Filter};
     #[test]
     fn back_and_forth() {
         let a_name = String::from("ARule");
@@ -31,7 +36,7 @@ mod tests {
         let _ = file.flush();
         drop(file);
 
-        let n = res3.unwrap();
+        let n = res3.as_ref().unwrap();
         assert_eq!(n.content, "ababababaa");
         assert_eq!(n.type_name, a_name);
         assert_eq!(n.children().len(), 1);
@@ -66,5 +71,14 @@ mod tests {
         assert_eq!(n2.type_name, a_name);
         assert_eq!(n1.children().len(), 0);
         assert_eq!(n2.children().len(), 1);
+
+        let filter = Filter::new_with_list(false, vec![a.id, b.id]);
+        let filtered_ast = filter.filter_ast(res3.unwrap());
+        let mut file = File::create("build/filtered_graph.dot").unwrap();
+        if let Err(_) = file.write_all(filtered_ast.to_dot().as_bytes()) {
+            panic!("Failed to write to file");
+        }
+        let _ = file.flush();
+        drop(file);
     }
 }
