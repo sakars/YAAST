@@ -81,7 +81,6 @@ impl<'a> Filter {
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
 
     use rule::{CHAR_ID, SEQ_ID, SOR_ID, STAR_ID};
 
