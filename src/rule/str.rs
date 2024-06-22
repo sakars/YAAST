@@ -20,6 +20,23 @@ impl<'a> Parsable<'a> for Str {
             None
         }
     }
+
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &Handler<'a>,
+    ) -> Option<Node<'a>> {
+        handler.handle_pre_parse(id);
+        if let Some(mut success) = self.parse(input, id, name) {
+            handler.handle_success(&mut success);
+            Some(success)
+        } else {
+            handler.handle_failure(id);
+            None
+        }
+    }
 }
 
 #[macro_export]
@@ -39,6 +56,7 @@ macro_rules! str {
 #[cfg(test)]
 mod tests {
     use crate::*;
+    use rule_handler::Handler;
 
     #[test]
     fn str_rule_matches_string() {
@@ -47,6 +65,8 @@ mod tests {
         let expected_node = Node::new("hello", rule.id, &rule.name);
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, Some(expected_node));
     }
@@ -57,6 +77,8 @@ mod tests {
         let input = "world";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -67,6 +89,8 @@ mod tests {
         let input = "";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -77,6 +101,8 @@ mod tests {
         let input = "hell";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -87,6 +113,9 @@ mod tests {
         let input = "hello world";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
+
         let expected_node = Node::new("hello", rule.id, &rule.name);
         assert_eq!(result, Some(expected_node));
     }

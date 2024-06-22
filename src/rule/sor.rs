@@ -22,6 +22,26 @@ impl<'a> Parsable<'a> for Sor<'a> {
         }
         None
     }
+
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &crate::rule_handler::Handler<'a>,
+    ) -> Option<Node<'a>> {
+        handler.handle_pre_parse(id);
+        for rule in &self.options {
+            if let Some(node) = rule.parse_with_handler(input, handler) {
+                let mut sor_node = Node::new(node.content, id, name);
+                sor_node.add_child(node);
+                handler.handle_success(&mut sor_node);
+                return Some(sor_node);
+            }
+        }
+        handler.handle_failure(id);
+        None
+    }
 }
 
 #[macro_export]
@@ -43,9 +63,9 @@ macro_rules! sor {
 
 #[cfg(test)]
 mod tests {
-    use rule::CHAR_ID;
-
     use crate::*;
+    use rule::CHAR_ID;
+    use rule_handler::Handler;
 
     #[test]
     fn macro_sor_works() {
@@ -76,6 +96,8 @@ mod tests {
         sor_node.add_child(Node::new("b", *CHAR_ID, &"Char".to_string()));
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, Some(sor_node));
     }
@@ -86,6 +108,8 @@ mod tests {
         let input = "";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -96,6 +120,8 @@ mod tests {
         let input = "a";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -108,6 +134,8 @@ mod tests {
         sor_node.add_child(Node::new("a", *CHAR_ID, &"Char".to_string()));
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, Some(sor_node));
     }

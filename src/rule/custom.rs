@@ -14,10 +14,32 @@ impl<'a> Parsable<'a> for Custom<'a> {
         // and wraps the result in its own Node struct
         // This is useful for filtering out unwanted nodes
         if let Some(node) = self.rule.parse(input) {
-            let mut wrapper = Some(Node::new(node.content, id, name));
-            wrapper.as_mut().unwrap().add_child(node);
-            wrapper
+            let mut wrapper = Node::new(node.content, id, name);
+            wrapper.add_child(node);
+            Some(wrapper)
         } else {
+            None
+        }
+    }
+
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &crate::rule_handler::Handler<'a>,
+    ) -> Option<Node<'a>> {
+        // Forwards the parse call to the rule stored in the Custom struct
+        // and wraps the result in its own Node struct
+        // This is useful for filtering out unwanted nodes
+        handler.handle_pre_parse(id);
+        if let Some(success) = self.rule.parse_with_handler(input, &handler) {
+            let mut wrapper = Node::new(success.content, id, name);
+            wrapper.add_child(success);
+            handler.handle_success(&mut wrapper);
+            Some(wrapper)
+        } else {
+            handler.handle_failure(id);
             None
         }
     }
@@ -75,6 +97,8 @@ macro_rules! custom {
 
 #[cfg(test)]
 mod tests {
+    use rule_handler::Handler;
+
     use crate::*;
 
     #[test]
@@ -82,6 +106,8 @@ mod tests {
         let rule = custom!("Custom" => char!('a'));
         let input = "a";
         let node = rule.parse(input).unwrap();
+        let node2 = rule.parse_with_handler(input, &Handler::new()).unwrap();
+        assert_eq!(node, node2);
         assert_eq!(node.content, "a");
         assert_ne!(node.type_id, *rule::CHAR_ID);
         assert_eq!(node.type_name, "Custom");
@@ -95,6 +121,8 @@ mod tests {
         let rule = custom!("Custom" => seq!(char!('a'), char!('b')));
         let input = "ab";
         let node = rule.parse(input).unwrap();
+        let node2 = rule.parse_with_handler(input, &Handler::new()).unwrap();
+        assert_eq!(node, node2);
         assert_eq!(node.content, "ab");
         assert_ne!(node.type_id, *rule::SEQ_ID);
         assert_eq!(node.type_name, "Custom");
@@ -118,11 +146,22 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Rule not initialized")]
+    fn custom_macro_uninitialized_rule_panics2() {
+        let rule = custom!("Custom");
+        let input = "a";
+        // This should panic because the rule is not initialized
+        let _node = rule.rule.parse_with_handler(input, &Handler::new());
+    }
+
+    #[test]
     fn latant_init_for_custom_rule() {
         let rule = custom!("Custom");
         let rule = rule.init(char!('a'));
         let input = "a";
         let node = rule.parse(input).unwrap();
+        let node2 = rule.parse_with_handler(input, &Handler::new()).unwrap();
+        assert_eq!(node, node2);
         assert_eq!(node.content, "a");
         assert_ne!(node.type_id, *rule::CHAR_ID);
         assert_eq!(node.type_name, "Custom");

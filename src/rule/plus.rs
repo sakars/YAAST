@@ -29,6 +29,32 @@ impl<'a> Parsable<'a> for Plus<'a> {
         node.content = &input[0..size];
         Some(node)
     }
+
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &crate::rule_handler::Handler<'a>,
+    ) -> Option<Node<'a>> {
+        handler.handle_pre_parse(id);
+        let mut node = Node::new_empty(id, name);
+        let mut size = 0;
+        if let Some(child) = self.rule.parse_with_handler(input, handler) {
+            size += child.content.len();
+            node.add_child(child);
+        } else {
+            handler.handle_failure(id);
+            return None;
+        }
+        while let Some(child) = self.rule.parse_with_handler(&input[size..], handler) {
+            size += child.content.len();
+            node.add_child(child);
+        }
+        node.content = &input[0..size];
+        handler.handle_success(&mut node);
+        Some(node)
+    }
 }
 
 #[macro_export]
@@ -48,6 +74,7 @@ macro_rules! plus {
 #[cfg(test)]
 mod tests {
     use crate::*;
+    use rule_handler::Handler;
 
     #[test]
     fn plus_rule_matches_one_time() {
@@ -55,6 +82,8 @@ mod tests {
         let input = "a";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         let mut expected_node = Node::new("a", rule.id, &rule.name);
         expected_node.add_child(Node::new("a", rule.id, &rule.name));
@@ -71,6 +100,8 @@ mod tests {
         expected_node.add_child(Node::new("a", rule.id, &rule.name));
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, Some(expected_node));
     }
@@ -81,6 +112,8 @@ mod tests {
         let input = "";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -96,6 +129,8 @@ mod tests {
         expected_node.add_child(Node::new("a", rule.id, &rule.name));
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
         assert_eq!(result, Some(expected_node));
     }
 }

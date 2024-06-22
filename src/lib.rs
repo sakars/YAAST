@@ -6,6 +6,8 @@ pub mod rule;
 pub mod filter;
 pub use filter::*;
 
+pub mod rule_handler;
+
 #[cfg(test)]
 mod tests {
 

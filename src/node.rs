@@ -4,6 +4,8 @@ use once_cell::sync::Lazy;
 
 use layout::{self, backends::svg::SVGWriter};
 
+use crate::rule_handler::Handler;
+
 pub static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)] // Add the Debug trait
@@ -22,6 +24,13 @@ pub static UNREACHABLE_ID: Lazy<usize> =
 
 pub trait Parsable<'a> {
     fn parse(&self, input: &'a str, id: usize, name: &String) -> Option<Node<'a>>;
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &Handler<'a>,
+    ) -> Option<Node<'a>>;
 }
 
 impl<'a> Node<'a> {

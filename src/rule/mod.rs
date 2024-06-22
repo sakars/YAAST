@@ -32,6 +32,7 @@ pub use str::*;
 use std::cell::OnceCell;
 use std::rc::Rc;
 
+use crate::rule_handler::Handler;
 use crate::Parsable;
 
 #[derive(Clone)]
@@ -58,6 +59,25 @@ impl<'a> Rule<'a> {
     pub fn parse(&self, input: &'a str) -> Option<crate::Node<'a>> {
         if let Some(rule) = self.rule.get() {
             rule.parse(input, self.id, &self.name)
+        } else {
+            panic!("Rule not initialized")
+        }
+    }
+
+    pub fn parse_with_handler(
+        &self,
+        input: &'a str,
+        handler: &Handler<'a>,
+    ) -> Option<crate::Node<'a>> {
+        handler.handle_pre_parse(self.id);
+        if let Some(rule) = self.rule.get() {
+            if let Some(mut node) = rule.parse(input, self.id, &self.name) {
+                handler.handle_success(&mut node);
+                Some(node)
+            } else {
+                handler.handle_failure(self.id);
+                None
+            }
         } else {
             panic!("Rule not initialized")
         }

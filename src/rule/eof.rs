@@ -17,6 +17,22 @@ impl<'a> Parsable<'a> for Eof {
             None
         }
     }
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &crate::rule_handler::Handler<'a>,
+    ) -> Option<Node<'a>> {
+        handler.handle_pre_parse(id);
+        if let Some(mut success) = self.parse(input, id, name) {
+            handler.handle_success(&mut success);
+            Some(success)
+        } else {
+            handler.handle_failure(id);
+            None
+        }
+    }
 }
 
 #[macro_export]
@@ -35,6 +51,8 @@ macro_rules! eof {
 
 #[cfg(test)]
 mod tests {
+    use rule_handler::Handler;
+
     use crate::*;
 
     #[test]
@@ -43,6 +61,8 @@ mod tests {
         let input = "";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         let expected_node = Node::new_empty(rule.id, &rule.name);
         assert_eq!(result, Some(expected_node));
@@ -54,6 +74,8 @@ mod tests {
         let input = "a";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -61,9 +83,11 @@ mod tests {
     #[test]
     fn eof_rule_does_not_match_longer_input() {
         let rule = eof!();
-        let input = "a";
+        let input = "ahdgfhfgh";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }

@@ -19,6 +19,22 @@ impl<'a> Parsable<'a> for One {
             None
         }
     }
+    fn parse_with_handler(
+        &self,
+        input: &'a str,
+        id: usize,
+        name: &String,
+        handler: &crate::rule_handler::Handler<'a>,
+    ) -> Option<Node<'a>> {
+        handler.handle_pre_parse(id);
+        if let Some(mut success) = self.parse(input, id, name) {
+            handler.handle_success(&mut success);
+            Some(success)
+        } else {
+            handler.handle_failure(id);
+            None
+        }
+    }
 }
 
 #[macro_export]
@@ -37,12 +53,16 @@ macro_rules! char {
 
 #[cfg(test)]
 mod tests {
+    use rule_handler::Handler;
+
     use crate::*;
 
     #[test]
     fn char_macro_works() {
         let rule = char!('a');
         let tree = rule.parse("a");
+        let tree2 = rule.parse_with_handler("a", &Handler::new());
+        assert_eq!(tree, tree2);
         assert_eq!(tree.as_ref().unwrap().content, "a");
         assert_eq!(tree.as_ref().unwrap().type_name, "Char");
         let rule = char!("test" => 'a');
@@ -79,6 +99,8 @@ mod tests {
         let rule = char!('a');
         let input = "a";
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
         let expected_node = Node::new("a", rule.id, &rule.name);
         assert_eq!(result, Some(expected_node));
     }
@@ -89,6 +111,8 @@ mod tests {
         let input = "b";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -99,6 +123,8 @@ mod tests {
         let input = "";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
 
         assert_eq!(result, None);
     }
@@ -109,6 +135,8 @@ mod tests {
         let input = "abc";
 
         let result = rule.parse(input);
+        let result2 = rule.parse_with_handler(input, &Handler::new());
+        assert_eq!(result, result2);
         let expected_node = Node::new("a", rule.id, &rule.name);
         assert_eq!(result, Some(expected_node));
     }
