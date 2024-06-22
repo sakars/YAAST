@@ -8,9 +8,7 @@ pub use filter::*;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Write};
 
-    use crate::Filter;
     #[test]
     fn back_and_forth() {
         let a_name = String::from("ARule");
