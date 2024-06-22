@@ -74,6 +74,7 @@ mod tests {
 
         let filter = Filter::new_with_list(false, vec![a.id, b.id]);
         let filtered_ast = filter.filter_ast(res3.unwrap());
+        filtered_ast.make_svg("build/filtered_graph.svg");
         let mut file = File::create("build/filtered_graph.dot").unwrap();
         if let Err(_) = file.write_all(filtered_ast.to_dot().as_bytes()) {
             panic!("Failed to write to file");

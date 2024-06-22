@@ -2,6 +2,8 @@ use std::{sync::atomic::AtomicUsize, vec};
 
 use once_cell::sync::Lazy;
 
+use layout::{self, backends::svg::SVGWriter};
+
 pub static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)] // Add the Debug trait
@@ -94,6 +96,19 @@ impl<'a> Node<'a> {
         result += &self.to_dot_private(&mut id);
         result += "}\n";
         result
+    }
+
+    pub fn make_svg(&self, filename: &str) {
+        let mut svg = SVGWriter::new();
+        let dot = self.to_dot();
+        let mut parser = layout::gv::DotParser::new(&dot);
+        let graph = parser.process().unwrap();
+        let mut builder = layout::gv::GraphBuilder::new();
+        builder.visit_graph(&graph);
+        let mut visual_graph = builder.get();
+        visual_graph.do_it(false, false, false, &mut svg);
+        let s = svg.finalize();
+        std::fs::write(filename, s).unwrap();
     }
 }
 
