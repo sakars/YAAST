@@ -27,15 +27,6 @@ mod tests {
         assert!(res2.is_some());
         assert!(res3.is_some());
         assert!(res4.is_none());
-
-        // Dump graph
-        let mut file = File::create("build/graph.dot").unwrap();
-        if let Err(_) = file.write_all(res3.as_ref().unwrap().to_dot().as_bytes()) {
-            panic!("Failed to write to file");
-        }
-        let _ = file.flush();
-        drop(file);
-
         let n = res3.as_ref().unwrap();
         assert_eq!(n.content, "ababababaa");
         assert_eq!(n.type_name, a_name);
@@ -71,15 +62,5 @@ mod tests {
         assert_eq!(n2.type_name, a_name);
         assert_eq!(n1.children().len(), 0);
         assert_eq!(n2.children().len(), 1);
-
-        let filter = Filter::new_with_list(false, vec![a.id, b.id]);
-        let filtered_ast = filter.filter_ast(res3.unwrap());
-        filtered_ast.make_svg("build/filtered_graph.svg");
-        let mut file = File::create("build/filtered_graph.dot").unwrap();
-        if let Err(_) = file.write_all(filtered_ast.to_dot().as_bytes()) {
-            panic!("Failed to write to file");
-        }
-        let _ = file.flush();
-        drop(file);
     }
 }
